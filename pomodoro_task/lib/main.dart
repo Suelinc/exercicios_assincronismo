@@ -1,9 +1,10 @@
-import 'dart:math';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const MaterialApp(home: PomodoroTask()));
+  runApp(const MaterialApp(
+      debugShowCheckedModeBanner: false, home: PomodoroTask()));
 }
 
 class PomodoroTask extends StatefulWidget {
@@ -14,117 +15,210 @@ class PomodoroTask extends StatefulWidget {
 }
 
 class PomodoroTaskState extends State<PomodoroTask> {
-  TextEditingController tarefaControl = TextEditingController();
+  Color cor1 = Colors.amber.shade800;
+  Color cor2 = Colors.tealAccent.shade700;
+  Color cor3 = const Color(0xFF363640);
+  Color cor4 = const Color(0xFF232323);
+  Color corBotao = Colors.amber.shade800;
+  Color corCirculo = const Color(0xFF363640);
 
+  TextEditingController campoTask = TextEditingController();
+
+  String task = 'Adicionar uma tarefa';
+  String cronometro = 'Pomodoro Task';
+  String textoBotao = 'Iniciar Pomodoro';
+  bool isPomodoro = false;
+  bool isDescanso = false;
+  double porcentagem = 1.0;
+  int tempoTotal = 25;
   
-  String tempo = '';
-  int pontos = 0;
-  bool isStart = false;
-  final foco = FocusNode();
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-            
-        
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          children: [
+      body: Container(
+          color: cor4,
+          padding: const EdgeInsets.all(15.0),
+          child: ListView(children: [
+            MaterialButton(
+                color: cor3,
+                onPressed: () {
+                  modalTask();
+                },
+                child: Text(
+                  task,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                )),
             const SizedBox(
-              height: 100.0,
+              height: 25.0,
             ),
-            ElevatedButton(
-              onPressed: (){},
-              // style:  const ButtonStyle(backgroundColor: Colors.blueGrey,),
-              child: const Text('Adicionar uma tarefa +'),
+            SizedBox(
+              height: 250,
+              child: Stack(
+                children: [
+                  Center(
+                    child: Container(
+                        padding: const EdgeInsets.all(15.0),
+                        width: 250.0,
+                        height: 250.0,
+                        child: CircularProgressIndicator(
+                          value: porcentagem,
+                          color: corCirculo,
+                          strokeWidth: 25,
+                        )),
+                  ),
+                  Center(
+                      child: Text(cronometro,
+                          style: const TextStyle(
+                            fontSize: 32.0,
+                            color: Colors.white,
+                          ))),
+                ],
+              ),
             ),
-            
-            const SizedBox(
-              height: 5.0,
-            ),
-            // TextField(
-            //   controller: tarefaControl,
-            //   keyboardType: TextInputType.text,
-            //   focusNode: foco,
-            // ),
-            // const SizedBox(
-            //   height: 10.0,
-            // ),
-            ElevatedButton(
-              onPressed: (){},
-              child: const Text('Iniciar Pomodoro'),
-            ),
-            
-            
-          ],
-        ),
-      ),
+            const SizedBox(height: 45.0),
+            Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 45,
+                ),
+                child: MaterialButton(
+                  color: corBotao,
+                  child: Text(
+                    textoBotao,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  onPressed: () {
+                    iniciarPomodoro();
+                  },
+                ))
+          ])),
     );
   }
 
-  Future<void> startGame() async {
-    var tempTime = 30;
-
-    if (!isStart) {
-      pontos = 0;
-      isStart = true;
-      
-
-      for (var index = tempTime; index > 0; index--) {
-        await Future.delayed(const Duration(seconds: 1));
-        tempTime -= 1;
-        setState(() {
-          if (tempTime == 0) {
-            tempo = '00:00';
-            
-            isStart = false;
-            tarefaControl.text = '';
-            showDialogAcertou();
-            foco.requestFocus();
-          } else {
-            foco.requestFocus();
-            tempo = (tempTime > 9 ? '00:$tempTime' : '00:0$tempTime');
-          }
+  modalTask() {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+              content: Column(children: [
+            TextField(
+              controller: campoTask,
+              autofocus: true,
+              textAlign: TextAlign.center,
+              textCapitalization: TextCapitalization.sentences,
+            ),
+            const SizedBox(
+              height: 10.0,
+            ),
+            MaterialButton(
+              onPressed: () {
+                adicionarTask();
+              },
+              color: cor1,
+              child: const Text('Adicionar',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  )),
+            ),
+            MaterialButton(
+              onPressed: () {
+                limparTask();
+              },
+              color: cor4,
+              child: const Text('Limpar',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  )),
+            )
+          ]));
         });
-      }
+  }
+  
+  void adicionarTask() {
+    if (campoTask.text.isNotEmpty) {
+      setState(() {
+        task = campoTask.text;
+      });
+    }
+    Navigator.pop(context, false);
+  }
+
+  void limparTask() {
+    setState(() {
+      task = 'Adicionar uma tarefa +';
+      campoTask.text = '';
+    });
+    Navigator.pop(context, false);
+  }
+
+  void iniciarPomodoro() {
+    if (!isPomodoro && !isDescanso) {
+      isPomodoro = true;
+      tempoTotal = 25;
+      int tempo = tempoTotal;
+      setState(() {
+        corCirculo = cor1;
+        cronometro = tempo > 9 ? "00:$tempo" : "00:0$tempo";
+      });
+
+      Timer.periodic(const Duration(seconds: 1), (timer) {
+        tempo = tempoTotal - timer.tick;
+        if (tempo > 0) {
+          setState(() {
+            cronometro = tempo > 9 ? "00:$tempo" : "00:0$tempo";
+            porcentagem -= (100 / tempoTotal) / 100;
+          });
+        } else {
+          timer.cancel();
+          isPomodoro = false;
+          isDescanso = true;
+          tempoTotal = 5;
+          setState(() {
+            corCirculo = cor2;
+            corBotao = cor2;
+            cronometro = 'Descanse!';
+            textoBotao = 'Iniciar Descanso';
+            porcentagem = 1;
+          });
+        }
+      });
+    } else if (isDescanso && !isPomodoro) {
+      isPomodoro = true;
+      int tempo = tempoTotal;
+
+      Timer.periodic(const Duration(seconds: 1), (timer) {
+        tempo = tempoTotal - timer.tick;
+
+        if (tempo > 0) {
+          setState(() {
+            cronometro = tempo > 9 ? "00:$tempo" : "00:0$tempo";
+            porcentagem -= (100 / tempoTotal) / 100;
+          });
+        } else {
+          timer.cancel();
+          isPomodoro = false;
+          isDescanso = true;
+          tempoTotal = 25;
+          porcentagem = 1;
+          setState(() {
+            cronometro = "Pomodoro Task";
+            corCirculo = cor3;
+            corBotao = cor1;
+            textoBotao = "Iniciar Pomodoro";
+          });
+        }
+      });
     }
   }
-
-  void showDialogAcertou() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // retorna um objeto do tipo Dialog
-        return AlertDialog(
-          title: Text("Acertou $pontos palavra(s)!"),
-        );
-      },
-    );
-  }
-
-  void showDialogOrientacao() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        // retorna um objeto do tipo Dialog
-        return AlertDialog(
-          title: Text(
-            'Clique em Start Game, digite a palavra mostrada e que em Enviar',
-            style: TextStyle(
-              color: Colors.blue.shade900,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  
 }
